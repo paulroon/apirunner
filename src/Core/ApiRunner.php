@@ -50,7 +50,7 @@ class ApiRunner {
                     'name' => $apicall['name'],
                     'time' => number_format($took, 3),
                     'status_code' => $res->getStatusCode(),
-                    'content-type' => $res->getHeader('content-type'),
+                    'content_type' => $res->getHeader('content-type'),
                     'response_length' => strlen($res->getBody())
                 ];
             }catch(\Exception $e){
