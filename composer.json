@@ -12,6 +12,7 @@
     },
     "name": "HappyCode/application",
     "require": {
-        "symfony/yaml": "2.5.x-dev"
+        "symfony/yaml": "2.5.x-dev",
+        "guzzlehttp/guzzle": "~4.0"
     }
 }
