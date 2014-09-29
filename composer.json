@@ -1,0 +1,17 @@
+{
+    "authors": [
+        {
+            "email": "paulroon@gmail.com",
+            "name": "Paul Rooney"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "HappyCode\\": "src/"
+        }
+    },
+    "name": "HappyCode/application",
+    "require": {
+        "symfony/yaml": "2.5.x-dev"
+    }
+}
