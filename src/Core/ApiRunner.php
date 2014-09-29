@@ -30,6 +30,7 @@ class ApiRunner {
     }
 
     public function run(){
+
         $report = [];
         /**
          * Guzzle is very capable of sending requests in paralel - however this is a performance tool as well as a
@@ -43,7 +44,7 @@ class ApiRunner {
 
             try{
                 $start = microtime(true);
-                $res = $this->client->get($apicall['path']);
+                $res = $this->doRequest($apicall);
                 $took = microtime(true) - $start;
                 $report[] = [
                     'success' => true,
@@ -65,5 +66,16 @@ class ApiRunner {
         }
 
         return $report;
+    }
+
+    public function doRequest($apicall) {
+
+        switch(strtoupper($apicall['method'])){
+            case 'POST': $response =  $this->client->post($apicall['path'], ['query' => parse_str($apicall['query'])]); break;
+            case 'GET':
+            default: $response = $this->client->get($apicall['path'], ['query' => parse_str($apicall['query'])]); break;
+        }
+        return $response;
+
     }
 } 
