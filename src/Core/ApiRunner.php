@@ -3,12 +3,15 @@
 namespace HappyCode\Core;
 
 use GuzzleHttp\Client;
+use GuzzleHttp\Message\Response;
 
 class ApiRunner {
 
     protected $endpoints;
 
     protected $client;
+    protected $lastResponse = [];
+    protected $tokens = [];
     protected $report = [];
 
     public function __construct($configs, $token = false) {
@@ -17,21 +20,56 @@ class ApiRunner {
             $this->endpoints = $configs['endpoints'];
         }
 
-        $protocol = $configs['api']['use_ssl'] ? 'https' : 'http';
-        $authenticationToken = (!!$token) ? $token : $configs['api']['auth_token'];
-        $this->client = new Client([
-            'base_url' => $protocol . '://' . $configs['api']['base_url'],
-            'defaults' => [
-                'query' => $configs['api']['default']['query'],
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $authenticationToken,
-                    'Cookie' => $configs['api']['default']['cookie']
-                ]
-            ]
-        ]);
+        $protocol = $configs['default']['use_ssl'] ? 'https' : 'http';
+        $this->client = new Client(['base_url' => $protocol . '://' . $configs['default']['base_url']]);
+        $authenticationToken = (!!$token) ? $token : $this->getAuthToken($configs['authentication'], $token);
 
-        $this->checkAuth($configs['api']['oauth2']['verify_uri']);
+        $this->client->setDefaultOption('query', $configs['default']['default']['query']);
+        $this->client->setDefaultOption(
+                                        'headers',
+                                        [
+                                            'Authorization' => 'Bearer ' . $authenticationToken,
+                                            'Cookie' => $configs['default']['default']['cookie']
+                                        ]
+        );
 
+        $this->checkAuth($configs['authentication']);
+
+    }
+
+    public function getAuthToken($auth, $token){
+        if(!$token) {
+            $this->tokens['application'] = $this->fetchApplicationBearerToken($auth);
+            //$this->tokens['application'] = $this->fetchUserBearerToken($auth);
+        }
+        return $this->tokens['application'];
+    }
+
+    protected function fetchUserBearerToken($auth){
+        return "userBearerTokenuserBearerTokenuserBearerTokenuserBearerToken==";
+    }
+
+    protected function fetchApplicationBearerToken($auth){
+        $appBearerRequest = [
+            'name' => 'Client Bearer Token',
+            'path' => $auth['uri']['base'] . $auth['uri']['token'],
+            'method' =>  'POST',
+            'headers' =>  [ 'Authorization' => 'Bearer ' . base64_encode($auth['app_key'] . ":" . $auth['app_secret'])],
+            'query' => [],
+            'body' => [ 'grant_type' => 'client_credentials', 'scope' => 'basic,alpha_builder']
+        ];
+
+        $st = microtime(true);
+
+        $response = $this->doRequest($appBearerRequest);
+
+        $this->reportSuccess([
+            "name" => "Client Bearer Token",
+            "path" => $appBearerRequest['path'],
+            "method" => "POST"
+        ], $response, (microtime(true) - $st));
+
+        return $this->lastResponse['json']['access_token'];
     }
 
     /**
@@ -43,7 +81,9 @@ class ApiRunner {
     }
 
 
-    private function checkAuth($verify_uri){
+    private function checkAuth($auth){
+
+        $verify_uri = $auth['uri']['base'] . $auth['uri']['verify'];
 
         echo "Using Token " . $this->client->getDefaultOption('headers/Authorization');
 
@@ -55,7 +95,8 @@ class ApiRunner {
 
             $this->reportSuccess([
                 "name" => "Token Authentication",
-                "path" => $verify_uri
+                "path" => $verify_uri,
+                "method" => "POST"
             ], $response, (microtime(true) - $st));
 
             echo PHP_EOL . "Token Authenticated." . ", Hi " . $user['username'] . PHP_EOL;
@@ -118,16 +159,27 @@ class ApiRunner {
 
         $response = $this->client->send($request);
 
-//        $responseBody = $response->json();
+        if('application/json' == $response->getHeader('content-type')) {
+            $this->lastResponse['json'] = $response->json();
+        }
 
         return $response;
 
     }
 
-    public function reportSuccess($apiCall, $res, $took){
+    public function reportSuccess($apiCall, Response $res, $took){
+
+        $url = str_replace(['http://', 'https://'], "", $res->getEffectiveUrl() );
+        $slPos = strpos($url, "/", 0);
+        $host = substr($url, 0, $slPos);
+        $path = str_replace(['http://', 'https://', $host], "", $apiCall['path']);
+
         $this->report[] = [
             'success' => true,
+            'host' => $host,
             'name' => $apiCall['name'],
+            'path' => $path,
+            'method' => $apiCall['method'],
             'time' => number_format($took, 3),
             'status_code' => $res->getStatusCode(),
             'content_type' => $res->getHeader('content-type'),
@@ -135,7 +187,7 @@ class ApiRunner {
         ];
     }
 
-    public function reportFail($apiCall, $e){
+    public function reportFail($apiCall, \Exception $e){
         $this->report[] = [
             'success' => false,
             'name' => $apiCall['name'],
@@ -147,10 +199,13 @@ class ApiRunner {
         echo PHP_EOL . PHP_EOL . "====== REPORT ====== " . PHP_EOL . PHP_EOL;
 
 
-        $resultRow = function($name = null, $time = null, $st = null, $r_len = null, $ct = null){
+        $resultRow = function($host = null, $name = null, $path = null, $method = null, $time = null, $st = null, $r_len = null, $ct = null){
             $pad = ($name == null) ? "+" : " ";
-            return sprintf("+ %s + %s + %s + %s + %s +" .  PHP_EOL,
-                str_pad($name, 20, $pad, STR_PAD_RIGHT),
+            return sprintf("+ %s + %s + %s + %s + %s + %s + %s + %s +" .  PHP_EOL,
+                str_pad($host, 30, $pad, STR_PAD_RIGHT),
+                str_pad($name, 30, $pad, STR_PAD_RIGHT),
+                str_pad($path, 45, $pad, STR_PAD_RIGHT),
+                str_pad($method, 10, $pad, STR_PAD_RIGHT),
                 str_pad($time, 15, $pad, STR_PAD_BOTH),
                 str_pad($st, 10, $pad, STR_PAD_BOTH),
                 str_pad($r_len, 20, $pad, STR_PAD_BOTH),
@@ -159,11 +214,20 @@ class ApiRunner {
         };
 
         echo $resultRow();
-        echo $resultRow("Endpoint", "(Time )secs", "Status", "Content-Length", "Type");
+        echo $resultRow("Host", "Call", "Endpoint", "Method", "(Time )secs", "Status", "Content-Length", "Type");
         echo $resultRow();
         foreach($this->report as $callReport) {
             if($callReport['success']){
-                echo $resultRow($callReport['name'], $callReport['time'], $callReport['status_code'], $callReport['response_length'], $callReport['content_type']);
+                echo $resultRow(
+                    $callReport['host'],
+                    $callReport['name'],
+                    $callReport['path'],
+                    $callReport['method'],
+                    $callReport['time'],
+                    $callReport['status_code'],
+                    $callReport['response_length'],
+                    $callReport['content_type']
+                );
             }else{
                 echo sprintf("+ %s: ERROR: (%s) +" .  PHP_EOL, str_pad($callReport['name'], 20, " ", STR_PAD_RIGHT), $callReport['error']);
             }
