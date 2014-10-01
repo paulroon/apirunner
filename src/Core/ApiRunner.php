@@ -40,13 +40,39 @@ class ApiRunner {
     public function getAuthToken($auth, $token){
         if(!$token) {
             $this->tokens['application'] = $this->fetchApplicationBearerToken($auth);
-            //$this->tokens['application'] = $this->fetchUserBearerToken($auth);
+            $this->tokens['user'] = $this->fetchUserBearerToken($auth);
         }
-        return $this->tokens['application'];
+        return $this->tokens['user'];
     }
 
     protected function fetchUserBearerToken($auth){
-        return "userBearerTokenuserBearerTokenuserBearerTokenuserBearerToken==";
+        $appBearerRequest = [
+            'name' => 'User Bearer Token',
+            'path' => $auth['uri']['base'] . $auth['uri']['token'],
+            'method' =>  'POST',
+            'headers' =>  [ 'Authorization' => 'Basic ' . base64_encode($auth['app_key'] . ":" . $auth['app_secret'])],
+            'query' => [],
+            'body' => [ 'grant_type' => 'password', 'username' => $auth['user_credentials']['username'], 'password' => $auth['user_credentials']['password']]
+        ];
+
+        $st = microtime(true);
+
+        try{
+            $response = $this->doRequest($appBearerRequest);
+        }catch(\Exception $e){
+            echo PHP_EOL . "Oauth User Authentication Failed in " . number_format((microtime(true) - $st), 3) . " secs" . PHP_EOL . "   - " . $e->getMessage() . PHP_EOL;
+            exit;
+        }
+
+        $this->reportSuccess([
+            "name" => "User Bearer Token",
+            "path" => $appBearerRequest['path'],
+            "method" => "POST"
+        ], $response, (microtime(true) - $st));
+
+        echo PHP_EOL . "USER Token: " . $this->lastResponse['json']['access_token'];
+
+        return $this->lastResponse['json']['access_token'];
     }
 
     protected function fetchApplicationBearerToken($auth){
@@ -61,13 +87,19 @@ class ApiRunner {
 
         $st = microtime(true);
 
-        $response = $this->doRequest($appBearerRequest);
-
+        try{
+            $response = $this->doRequest($appBearerRequest);
+        }catch(\Exception $e){
+            echo PHP_EOL . "Oauth Client Authentication Failed in " . number_format((microtime(true) - $st), 3) . " secs" . PHP_EOL . "   - " . $e->getMessage() . PHP_EOL;
+            exit;
+        }
         $this->reportSuccess([
             "name" => "Client Bearer Token",
             "path" => $appBearerRequest['path'],
             "method" => "POST"
         ], $response, (microtime(true) - $st));
+
+        echo PHP_EOL . "CLIENT Token: " . $this->lastResponse['json']['access_token'];
 
         return $this->lastResponse['json']['access_token'];
     }
@@ -83,9 +115,9 @@ class ApiRunner {
 
     private function checkAuth($auth){
 
-        $verify_uri = $auth['uri']['base'] . $auth['uri']['verify'];
+        $token = $this->client->getDefaultOption('headers/Authorization');
 
-        echo "Using Token " . $this->client->getDefaultOption('headers/Authorization');
+        $verify_uri = $auth['uri']['base'] . $auth['uri']['verify'];
 
         $st = microtime(true);
         try{
@@ -99,7 +131,7 @@ class ApiRunner {
                 "method" => "POST"
             ], $response, (microtime(true) - $st));
 
-            echo PHP_EOL . "Token Authenticated." . ", Hi " . $user['username'] . PHP_EOL;
+            echo PHP_EOL . "User Token Authenticated." . ", Hi " . $user['username'] . PHP_EOL;
         }catch(\Exception $e){
             echo PHP_EOL . "Oauth Authentication Failed in " . number_format((microtime(true) - $st), 3) . " secs" . PHP_EOL . "   - " . $e->getMessage() . PHP_EOL;
             exit;
@@ -199,8 +231,8 @@ class ApiRunner {
         echo PHP_EOL . PHP_EOL . "====== REPORT ====== " . PHP_EOL . PHP_EOL;
 
 
-        $resultRow = function($host = null, $name = null, $path = null, $method = null, $time = null, $st = null, $r_len = null, $ct = null){
-            $pad = ($name == null) ? "+" : " ";
+        $resultRow = function($host = null, $name = null, $path = null, $method = null, $time = null, $st = null, $r_len = null, $ct = null, $spacer = "-"){
+            $pad = ($name === null) ? "+" : $spacer;
             return sprintf("+ %s + %s + %s + %s + %s + %s + %s + %s +" .  PHP_EOL,
                 str_pad($host, 30, $pad, STR_PAD_RIGHT),
                 str_pad($name, 30, $pad, STR_PAD_RIGHT),
@@ -214,10 +246,10 @@ class ApiRunner {
         };
 
         echo $resultRow();
-        echo $resultRow("Host", "Call", "Endpoint", "Method", "(Time )secs", "Status", "Content-Length", "Type");
-        echo $resultRow();
+        echo $resultRow("Host", "Call", "Endpoint", "Method", "(Time )secs", "Status", "Content-Length", "Type", " ");
         foreach($this->report as $callReport) {
             if($callReport['success']){
+                echo $resultRow(null, "");
                 echo $resultRow(
                     $callReport['host'],
                     $callReport['name'],
@@ -226,7 +258,8 @@ class ApiRunner {
                     $callReport['time'],
                     $callReport['status_code'],
                     $callReport['response_length'],
-                    $callReport['content_type']
+                    $callReport['content_type'],
+                    " "
                 );
             }else{
                 echo sprintf("+ %s: ERROR: (%s) +" .  PHP_EOL, str_pad($callReport['name'], 20, " ", STR_PAD_RIGHT), $callReport['error']);
