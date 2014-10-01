@@ -21,19 +21,20 @@ class ApiRunner {
         }
 
         $protocol = $configs['default']['use_ssl'] ? 'https' : 'http';
-        $this->client = new Client(['base_url' => $protocol . '://' . $configs['default']['base_url']]);
-        $authenticationToken = (!!$token) ? $token : $this->getAuthToken($configs['authentication'], $token);
+        $this->client = new Client([
+            'base_url' => $protocol . '://' . $configs['default']['base_url'],
+            'query' => $configs['default']['default']['query'],
+            'headers' => [ 'Cookie' => $configs['default']['default']['cookie']]
+        ]);
 
-        $this->client->setDefaultOption('query', $configs['default']['default']['query']);
-        $this->client->setDefaultOption(
-                                        'headers',
-                                        [
-                                            'Authorization' => 'Bearer ' . $authenticationToken,
-                                            'Cookie' => $configs['default']['default']['cookie']
-                                        ]
-        );
-
-        $this->checkAuth($configs['authentication']);
+        /**
+         * Lets Awth this sucka!
+         */
+        if(isset($configs['authentication'])){
+            $authenticationToken = (!!$token) ? $token : $this->getAuthToken($configs['authentication'], $token);
+            $this->setAuthToken($authenticationToken);
+            $this->checkAuth($configs['authentication']);
+        }
 
     }
 
@@ -108,8 +109,8 @@ class ApiRunner {
      * override the token from the configs
      * @param $token
      */
-    public function setAuthToken($token) {
-        $this->client->setDefaultOption('headers/Authorization', 'Bearer ' . $token);
+    public function setAuthToken($token, $type = "Bearer") {
+        $this->client->setDefaultOption('headers/Authorization', $type . ' ' . $token);
     }
 
 

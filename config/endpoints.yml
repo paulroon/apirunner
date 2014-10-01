@@ -1,20 +1,7 @@
 
-authentication:
-  app_key: APP_KEY_APP_KEY_APP_KEY_APP_KEY_APP_KEY_APP_KEY_
-  app_secret: APP_SECRET_APP_SECRET_APP_SECRET_APP_SECRET_
-  uri:
-    base: 'https://myOAUTHProviderServer.com'
-    authorize: '/oauth/dialog'
-    token: '/oauth2/token'
-    verify: '/oauth2/verify-token'
-    validate_ssl: false
-  user_credentials:
-    username: paulroon@gmail.com
-    password: __myawesomepassword__
-
 default:
   use_ssl: false
-  base_url: http://requestb.in/12j0kq51
+  base_url: httpbin.org
   default:
       cookie: 'XDEBUG_SESSION=PHPSTORM'
       query:
@@ -22,12 +9,12 @@ default:
 
 endpoints:
 
-    - name: Get 1 thing
-      path: http://httpbin.org/html
+    - name: Fetch Page
+      path: /html
       method: GET
 
     - name: Update Thingy
-      path: /Thingies
+      path: /put
       method: PUT
       body: |
             {
@@ -36,7 +23,7 @@ endpoints:
             }
 
     - name: New Thingy
-      path: /Thingies
+      path: /post
       method: POST
       body: |
             {
