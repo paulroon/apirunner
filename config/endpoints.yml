@@ -34,7 +34,7 @@ endpoints:
               "id":100,
               "name":"New Thingy"
             }
-            
+
     - name: New Thingy
       path: /Thingies
       method: POST
