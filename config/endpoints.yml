@@ -1,0 +1,123 @@
+
+authentication:
+  app_key: APP_KEY_APP_KEY_APP_KEY_APP_KEY_APP_KEY_APP_KEY_
+  app_secret: APP_SECRET_APP_SECRET_APP_SECRET_APP_SECRET_
+  uri:
+    base: 'https://auth.test.alpha.org'
+    authorize: '/oauth/dialog'
+    token: '/oauth2/token.json'
+    verify: '/oauth2/verify-token.json'
+    validate_ssl: false
+  user_credentials:
+    username: paulroon@gmail.com
+    password: __myawesomepassword__
+
+default:
+  use_ssl: false
+  base_url: local.courses.api.alpha.org/
+  default:
+      cookie: 'XDEBUG_SESSION=PHPSTORM'
+      query:
+        XDEBUG_SESSION_START: PHPSTORM
+
+endpoints:
+
+#
+#   REGENT API
+#
+
+    - name: Get 1 User
+      path: http://regent-api.develop.acs-srv.com/individuals/1056238758
+      method: GET
+
+    - name: Get me
+      path: http://regent-api.develop.acs-srv.com/individual/me
+      method: GET
+
+    - name: Get 1 Venue
+      path: http://regent-api.develop.acs-srv.com/venues/37421592
+      method: GET
+
+    - name: Get 1 Organisations
+      path: http://regent-api.develop.acs-srv.com/organisations/37421592
+      method: GET
+
+    - name: Get 1 Mailinglist
+      path: http://regent-api.develop.acs-srv.com/mailinglists/37421592
+      method: GET
+
+    - name: Get 1 Campaign
+      path: http://regent-api.develop.acs-srv.com/campaigns/37421592
+      method: GET
+
+    - name: Get 1 Subscription
+      path: http://regent-api.develop.acs-srv.com/subscriptions/37421592
+      method: GET
+
+    - name: Get 1 Client
+      path: http://regent-api.develop.acs-srv.com/clients/37421592
+      method: GET
+
+
+#
+#   API
+#
+
+    - name: Fetch One
+      path: http://local.api.alpha.org/public/core/locale-permissions
+      method: POST
+      body:
+       countries: [ "GB" ]
+
+
+#
+#   COURSES API
+#
+
+    - name: Fetch All
+      path: /2/courses
+      method: GET
+
+    - name: Fetch One
+      path: /2/courses/10
+      method: GET
+#
+    - name: Reschedule
+      path: /2/courses/12/reschedule
+      method: PUT
+      body: |
+            {
+              "startDate": "2016-07-21T21:50:00 UTC"
+            }
+
+    - name: Start Times
+      path: /2/courses/12/starttimes
+      method: PUT
+      body: |
+            {
+              "starttime": "21:50"
+            }
+
+    - name: Update Course
+      path: /2/courses/12
+      method: PUT
+      body: |
+            {
+              "id":12,
+              "name":"New Streatham & Clapham High",
+              "contact":"John Smith",
+              "email":"john.smith@htb.org",
+              "phone":"0845 644 7533",
+              "website":"http:\/\/www.htb.org",
+              "type":"Alpha",
+              "denomination":null,
+              "resources":"Alpha Scripts,Youth Talkbuilder,Youth Film Series,Nicky G Videos,test other",
+              "language":"en",
+              "country":"GB",
+              "start":"2016-07-21T21:50:00+0000",
+              "finish":"2016-10-10T21:50:00+0000",
+              "published":false,
+              "approved":true,
+              "organisationId":null
+            }
+
