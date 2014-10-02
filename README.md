@@ -1,7 +1,7 @@
 apirunner
 =========
 
-[![Build Status](https://secure.travis-ci.org/guzzle/guzzle.png?branch=master)](http://travis-ci.org/guzzle/guzzle)
+[![Build Status](https://secure.travis-ci.org/paulroon/apirunner.png?branch=master)](http://travis-ci.org/paulroon/apirunner)
 
 A command line tool for running and measuring multiple api calls
 
